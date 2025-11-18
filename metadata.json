@@ -1,0 +1,5 @@
+{
+  "name": "CodeInspector Hub",
+  "description": "An AI-powered platform to analyze website source code. Upload a folder to get a detailed report on technologies, architecture, data flow, and performance improvements.",
+  "requestFramePermissions": []
+}
