@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Architecture } from '../../types';
 
@@ -29,17 +28,27 @@ export const ArchitectureTab: React.FC<ArchitectureTabProps> = ({ architecture }
       <Section title="Structure Summary">
         <p className="text-gray-300 leading-relaxed">{architecture.structureSummary}</p>
       </Section>
+      
+      {architecture.structureDiagram && (
+          <Section title="Project Structure Diagram">
+              <pre className="text-gray-300 font-mono text-sm whitespace-pre overflow-x-auto bg-gray-800/60 p-4 rounded-md">
+                  <code>
+                      {architecture.structureDiagram}
+                  </code>
+              </pre>
+          </Section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Section title="Main Pages">
           <List items={architecture.pages} />
-        </Section>
+        </section>
         <Section title="Reusable Components">
           <List items={architecture.reusableComponents} />
-        </Section>
+        </section>
         <Section title="Asset Folders">
           <List items={architecture.assetFolders} />
-        </Section>
+        </section>
         <Section title="External Libraries & CDNs">
           <ul className="space-y-2">
             {architecture.externalLibraries.length > 0 ? architecture.externalLibraries.map((lib, index) => (
@@ -50,7 +59,7 @@ export const ArchitectureTab: React.FC<ArchitectureTabProps> = ({ architecture }
               </li>
             )) : <li className="text-gray-500 italic">None detected.</li>}
           </ul>
-        </Section>
+        </section>
       </div>
     </div>
   );

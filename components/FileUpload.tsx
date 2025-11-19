@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useLayoutEffect } from 'react';
 import { StoredFile } from '../types';
 import { UploadIcon, AnalyzeIcon } from './Icons';
 import { FileProcessingIndicator } from './FileProcessingIndicator';
@@ -10,11 +10,28 @@ interface FileUploadProps {
   disabled: boolean;
 }
 
+// FIX: Define an interface for File object with non-standard webkitRelativePath property.
+// This helps with type safety when handling directory uploads.
+interface FileWithRelativePath extends File {
+  readonly webkitRelativePath: string;
+}
+
 export const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, onAnalyze, fileCount, disabled }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [processingStats, setProcessingStats] = useState<{ [key: string]: number }>({});
   const [totalProcessed, setTotalProcessed] = useState(0);
+
+  // Use useLayoutEffect to set non-standard attributes synchronously after DOM mutations,
+  // but before paint. This is the safest way to handle this in React 19 to avoid
+  // race conditions or type system issues with in-browser compilation.
+  useLayoutEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.setAttribute('directory', 'true');
+      inputRef.current.setAttribute('webkitdirectory', 'true');
+    }
+  }, []);
+
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) return;
@@ -23,7 +40,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, onAnaly
     setProcessingStats({});
     setTotalProcessed(0);
 
-    const fileList = Array.from(event.target.files);
+    // FIX: Explicitly cast the file list to our custom interface.
+    // This resolves the issue where `file` was being inferred as `unknown`, fixing all related errors.
+    const fileList = Array.from(event.target.files) as FileWithRelativePath[];
     const filePromises: Promise<StoredFile>[] = [];
     const stats: { [key: string]: number } = {
         HTML: 0,
@@ -35,11 +54,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, onAnaly
     };
 
     for (const file of fileList) {
-        // FIX: Cast file to File to prevent type errors where it's treated as 'unknown'.
-        // This ensures properties like 'name' are accessible and that it can be used as a Blob.
-        const currentFile = file as File;
-
-        const extension = currentFile.name.split('.').pop()?.toLowerCase() || '';
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
         let category: keyof typeof stats = 'Other';
         let isTextFile = false;
 
@@ -59,18 +74,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, onAnaly
                 reader.onload = e => {
                     if (e.target?.result) {
                         resolve({
-                            name: (currentFile as any).webkitRelativePath || currentFile.name,
+                            // FIX: Use the typed property directly, avoiding `as any`.
+                            name: file.webkitRelativePath || file.name,
                             content: e.target.result as string,
                         });
-                    } else { reject(new Error(`Failed to read file: ${currentFile.name}`)); }
+                    } else { reject(new Error(`Failed to read file: ${file.name}`)); }
                 };
                 reader.onerror = reject;
-                reader.readAsText(currentFile);
+                // FIX: `file` is now correctly typed as `File` (which extends Blob), resolving the assignability error.
+                reader.readAsText(file);
             }));
         } else {
             filePromises.push(Promise.resolve({
-                name: (currentFile as any).webkitRelativePath || currentFile.name,
-                content: `[Binary File: ${currentFile.name}]`,
+                // FIX: Use the typed property directly, avoiding `as any`.
+                name: file.webkitRelativePath || file.name,
+                content: `[Binary File: ${file.name}]`,
             }));
         }
         
@@ -100,9 +118,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, onAnaly
         ref={inputRef}
         onChange={handleFileChange}
         className="hidden"
-        // @ts-ignore
-        webkitdirectory="true"
-        directory="true"
         multiple
       />
 

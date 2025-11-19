@@ -11,6 +11,10 @@ export interface Overview {
     name: string;
     category: string;
   }[];
+  themeInfo?: {
+    name: string;
+    downloadUrl: string;
+  };
 }
 
 export interface Architecture {
@@ -22,6 +26,7 @@ export interface Architecture {
     url: string;
   }[];
   assetFolders: string[];
+  structureDiagram?: string;
 }
 
 export interface DataFlow {
@@ -38,6 +43,7 @@ export interface DataFlow {
     purpose: string;
   }[];
   securityIssues: string[];
+  storageDetails?: string;
 }
 
 export interface Improvement {

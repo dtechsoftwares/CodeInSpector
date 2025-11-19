@@ -42,6 +42,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ overview }) => {
         <h3 className="text-lg font-semibold text-cyan-400 mb-2">AI Summary</h3>
         <p className="text-gray-300 leading-relaxed bg-gray-900/50 p-4 rounded-md">{overview.summary}</p>
       </div>
+      {overview.themeInfo && (
+        <div>
+          <h3 className="text-lg font-semibold text-cyan-400 mb-2">WordPress Theme Info</h3>
+          <div className="bg-gray-900/50 p-4 rounded-md">
+            <p className="font-semibold text-white">Theme Name: <span className="font-normal text-gray-300">{overview.themeInfo.name}</span></p>
+            <p className="font-semibold text-white">Download Link: <a href={overview.themeInfo.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">{overview.themeInfo.downloadUrl}</a></p>
+          </div>
+        </div>
+      )}
       <div>
         <h3 className="text-lg font-semibold text-cyan-400 mb-2">Detected Technologies</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

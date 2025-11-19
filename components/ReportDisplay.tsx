@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AnalysisReport, StoredFile } from '../types';
 import { generatePdf } from '../services/pdfService';
@@ -10,6 +9,7 @@ import { DownloadIcon, NewAnalysisIcon, ChatIcon } from './Icons';
 import { createChatWithContext } from '../services/geminiService';
 import { Chat } from '@google/genai';
 import { Chatbot } from './Chatbot';
+import { PrintableReport } from './PrintableReport';
 
 interface ReportDisplayProps {
   report: AnalysisReport;
@@ -22,6 +22,7 @@ type Tab = 'Overview' | 'Architecture' | 'Data Flow' | 'Improvements';
 export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, files, onNewAnalysis }) => {
   const [activeTab, setActiveTab] = useState<Tab>('Overview');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatSession, setChatSession] = useState<Chat | null>(null);
 
@@ -36,15 +37,27 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, files, onN
     }
   }, [files]);
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await generatePdf(report, 'report-content');
-    } catch(e) {
-      console.error("PDF generation failed", e);
-    } finally {
-      setIsDownloading(false);
+  useEffect(() => {
+    if (isPreparingPdf) {
+      // Allow React to render the hidden PrintableReport component
+      setTimeout(async () => {
+        try {
+          await generatePdf(report, 'printable-content');
+        } catch(e) {
+          console.error("PDF generation failed", e);
+          alert("Sorry, there was an error generating the PDF.");
+        } finally {
+          setIsDownloading(false);
+          setIsPreparingPdf(false); // Cleanup
+        }
+      }, 100);
     }
+  }, [isPreparingPdf, report]);
+
+
+  const handleDownload = () => {
+    setIsDownloading(true);
+    setIsPreparingPdf(true); // This will trigger the useEffect
   };
   
   const TABS: Tab[] = ['Overview', 'Architecture', 'Data Flow', 'Improvements'];
@@ -88,7 +101,7 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, files, onN
           </button>
           <button onClick={handleDownload} disabled={isDownloading} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 rounded-md hover:from-cyan-600 hover:to-blue-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-wait">
             <DownloadIcon className="w-4 h-4 mr-2"/>
-            {isDownloading ? 'Downloading...' : 'Download Report'}
+            {isDownloading ? 'Preparing PDF...' : 'Download Report'}
           </button>
         </div>
       </div>
@@ -115,6 +128,13 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, files, onN
         {renderTabContent()}
       </div>
     </div>
+    
+    {isPreparingPdf && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '1024px' }}>
+            <PrintableReport report={report} />
+        </div>
+    )}
+
     <Chatbot 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)}

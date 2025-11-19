@@ -29,7 +29,21 @@ export async function analyzeCode(files: StoredFile[]): Promise<AnalysisReport> 
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const analysisInstructions = "You are an expert software engineer and code reviewer. Analyze the following collection of website source code files and generate a comprehensive report in JSON format.\n\n**Instructions:**\n1. **Analyze Technologies:** Identify all languages, frameworks (CSS & JS), libraries, and tools used.\n2. **Identify Visual Theme:** Based on the CSS and HTML, determine the visual theme or design system (e.g., 'Minimalist', 'Corporate', 'Dark Mode', 'Neumorphic', 'Material Design').\n3. **Analyze Architecture:** Describe the overall structure, list main pages, find reusable components, and list external dependencies.\n4. **Analyze Data Flow:** Detail all forms, API calls (fetch/xhr), and data submission points. Identify potential security issues like missing validation.\n5. **Suggest Improvements:** Provide actionable recommendations for performance, security, scalability, UX, SEO, and code quality. Prioritize suggestions.\n\n**Source Code Files:**\n\n";
+  const analysisInstructions = `You are an expert software engineer and code reviewer. Analyze the following collection of website source code files and generate a comprehensive report in JSON format.
+
+**Instructions:**
+1.  **Analyze Technologies:** Identify all languages, frameworks, libraries, and tools.
+2.  **Identify Visual Theme:** Determine the visual theme (e.g., 'Minimalist', 'Corporate', 'Dark Mode').
+3.  **WordPress Theme Detection:** If this is a WordPress site, identify the theme name from 'wp-content/themes/' and find its official or most likely download URL.
+4.  **Analyze Architecture:** Describe the overall structure, list main pages, find reusable components, and list external dependencies.
+5.  **Generate Structure Diagram:** Create a hierarchical tree diagram of the file and component structure as a single string. Use indentation and symbols like '├─' and '└─' to represent the structure.
+6.  **Analyze Data Flow:** Detail forms, API calls, and potential security issues.
+7.  **Analyze Data Storage:** Describe in detail how data is saved. Specify if it uses browser storage (localStorage, IndexedDB) for offline persistence, sends data to remote APIs for online storage, or other mechanisms.
+8.  **Suggest Improvements:** Provide actionable recommendations for performance, security, scalability, UX, SEO, and code quality.
+
+**Source Code Files:**
+
+`;
 
   let promptContent = buildFileContextString(files, analysisInstructions);
 
@@ -55,6 +69,15 @@ export async function analyzeCode(files: StoredFile[]): Promise<AnalysisReport> 
               required: ["name", "category"],
             },
           },
+          themeInfo: {
+            type: Type.OBJECT,
+            description: "If a WordPress theme is identified, provides its name and a download link.",
+            properties: {
+              name: { type: Type.STRING, description: "The name of the WordPress theme." },
+              downloadUrl: { type: Type.STRING, description: "A likely download URL for the theme." },
+            },
+            required: ["name", "downloadUrl"],
+          },
         },
         required: ["websiteType", "summary", "theme", "technologies"],
       },
@@ -76,6 +99,7 @@ export async function analyzeCode(files: StoredFile[]): Promise<AnalysisReport> 
             },
           },
           assetFolders: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Folders like '/images', '/assets', '/css'." },
+          structureDiagram: { type: Type.STRING, description: "A text-based tree diagram of the project structure." },
         },
         required: ["structureSummary", "pages", "reusableComponents", "externalLibraries"],
       },
@@ -109,6 +133,7 @@ export async function analyzeCode(files: StoredFile[]): Promise<AnalysisReport> 
             },
           },
           securityIssues: { type: Type.ARRAY, items: { type: Type.STRING }, description: "e.g., 'No client-side validation on contact form', 'API key visible in script.js'" },
+          storageDetails: { type: Type.STRING, description: "A detailed explanation of how data is stored (online, offline, remote)." },
         },
         required: ["dataSummary", "forms", "apiCalls", "securityIssues"],
       },

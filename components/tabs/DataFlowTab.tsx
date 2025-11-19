@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DataFlow } from '../../types';
 
@@ -23,6 +22,12 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ dataFlow }) => {
         <p className="text-gray-300 leading-relaxed">{dataFlow.dataSummary}</p>
       </Section>
       
+      {dataFlow.storageDetails && (
+        <Section title="Data Storage Details">
+          <p className="text-gray-300 leading-relaxed">{dataFlow.storageDetails}</p>
+        </Section>
+      )}
+
       <Section title="Detected Forms">
         {dataFlow.forms.length > 0 ? (
           <div className="space-y-4">
